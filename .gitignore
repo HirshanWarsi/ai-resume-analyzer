@@ -24,3 +24,13 @@ __pycache__/
 # Coverage
 .coverage
 htmlcov/
+
+# Resume uploads
+backend/uploads/
+
+# Python cache
+*.pyo
+*.pyd
+
+# OS
+Thumbs.db
