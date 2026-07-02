@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserCreate
 from app.auth.hashing import hash_password
+from app.auth.hashing import verify_password
 
 def get_user_by_email(db: Session, email: str):
     """
@@ -28,3 +29,19 @@ def create_user(db: Session, user: UserCreate):
     db.refresh(new_user)
 
     return new_user
+
+def authenticate_user(db: Session, email: str, password: str):
+    """
+    Authenticate a user using email and password.
+    Returns the user if authentication succeeds, otherwise None.
+    """
+
+    user = get_user_by_email(db, email)
+
+    if not user:
+        return None
+
+    if not verify_password(password, user.hashed_password):
+        return None
+
+    return user
