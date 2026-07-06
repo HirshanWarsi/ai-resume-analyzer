@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import api from "@/services/api";
+import { clearAuthToken, setAuthToken } from "@/services/api";
+import { getCurrentUser } from "@/services/authService";
 
 const AuthContext = createContext();
 
@@ -11,21 +12,19 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
+      clearAuthToken();
+      setUser(null);
       setLoading(false);
       return;
     }
 
     try {
-      const response = await api.get("/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      setAuthToken(token);
+      const response = await getCurrentUser();
       setUser(response.data);
     } catch (err) {
       console.error(err);
-      localStorage.removeItem("access_token");
+      clearAuthToken();
       setUser(null);
     } finally {
       setLoading(false);
@@ -33,13 +32,18 @@ export function AuthProvider({ children }) {
   }
 
   useEffect(() => {
-    fetchUser();
+    void fetchUser();
   }, []);
 
+  function login(token) {
+    setAuthToken(token);
+    return fetchUser();
+  }
+
   function logout() {
-    localStorage.removeItem("access_token");
+    clearAuthToken();
     setUser(null);
-    window.location.href = "/login";
+    window.location.assign("/login");
   }
 
   return (
@@ -48,6 +52,7 @@ export function AuthProvider({ children }) {
         user,
         loading,
         logout,
+        login,
         refreshUser: fetchUser,
       }}
     >

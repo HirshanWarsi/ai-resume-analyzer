@@ -16,7 +16,7 @@ export default function ResumeDropzone({ onFileSelected }) {
       setFile(f);
       onFileSelected?.(f);
     },
-    [onFileSelected]
+    [onFileSelected],
   );
 
   const onDrop = (e) => {
@@ -25,9 +25,20 @@ export default function ResumeDropzone({ onFileSelected }) {
     handleFiles(e.dataTransfer.files);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      inputRef.current?.click();
+    }
+  };
+
   return (
     <div className="w-full">
       <div
+        role="button"
+        tabIndex={0}
+        aria-label="Upload a resume file"
+        onKeyDown={handleKeyDown}
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragging(true);
@@ -36,10 +47,10 @@ export default function ResumeDropzone({ onFileSelected }) {
         onDrop={onDrop}
         onClick={() => inputRef.current?.click()}
         className={cn(
-          "relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition-colors sm:p-16",
+          "relative flex cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed p-10 text-center transition-colors outline-none focus:ring-2 focus:ring-primary/50 sm:p-16",
           isDragging
             ? "border-primary bg-primary/5"
-            : "border-border bg-muted/40 hover:border-primary/50 hover:bg-muted/60"
+            : "border-border bg-muted/40 hover:border-primary/50 hover:bg-muted/60",
         )}
       >
         {/* scanning motif */}
@@ -52,6 +63,7 @@ export default function ResumeDropzone({ onFileSelected }) {
           type="file"
           accept=".pdf,.doc,.docx"
           className="hidden"
+          aria-label="Choose a resume file"
           onChange={(e) => handleFiles(e.target.files)}
         />
 
@@ -99,6 +111,7 @@ export default function ResumeDropzone({ onFileSelected }) {
               </p>
               <button
                 type="button"
+                aria-label="Remove selected resume file"
                 onClick={() => setFile(null)}
                 className="mt-4 flex items-center gap-1 text-xs font-medium text-destructive hover:underline"
               >

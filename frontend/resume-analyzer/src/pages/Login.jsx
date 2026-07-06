@@ -5,17 +5,9 @@ import AuthShell from "@/components/auth/AuthShell";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import api from "@/services/api";
-
-function getErrorMessage(err) {
-  const detail = err?.response?.data?.detail;
-
-  if (typeof detail === "string") return detail;
-  if (Array.isArray(detail)) return detail.map((item) => item?.msg || item).join(", ");
-  if (detail && typeof detail === "object") return detail.msg || "Unable to log in right now.";
-
-  return "Invalid email or password";
-}
+import { loginUser } from "@/services/authService";
+import { getApiErrorMessage } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -24,6 +16,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -32,22 +25,17 @@ export default function Login() {
     setError("");
 
     try {
-      const response = await api.post(
-        "/auth/login",
-        new URLSearchParams({ username: email, password }),
-        {
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        }
-      );
-
+      const response = await loginUser(email, password);
       const token = response.data?.access_token;
-      if (!token) throw new Error("No access token returned");
 
-      localStorage.setItem("access_token", token);
-      api.defaults.headers.common.Authorization = `Bearer ${token}`;
+      if (!token) {
+        throw new Error("No access token returned");
+      }
+
+      await login(token);
       navigate("/dashboard");
     } catch (err) {
-      setError(getErrorMessage(err));
+      setError(getApiErrorMessage(err, "Invalid email or password"));
     } finally {
       setLoading(false);
     }
@@ -111,11 +99,10 @@ export default function Login() {
           </div>
         </div>
 
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+        {error && <p className="text-sm text-destructive">{error}</p>}
 
         <Button type="submit" className="w-full" size="lg" disabled={loading}>
           {loading ? "Logging in..." : "Log in"}
-
           {!loading && <ArrowRight className="h-4 w-4" />}
         </Button>
 

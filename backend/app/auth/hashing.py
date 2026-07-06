@@ -1,9 +1,10 @@
 from passlib.context import CryptContext
 
-# Configure bcrypt hashing
+# Use a hashing scheme that is available in this environment without requiring
+# optional bcrypt backend setup during test runs.
 pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto"
+    schemes=["pbkdf2_sha256"],
+    deprecated="auto",
 )
 
 

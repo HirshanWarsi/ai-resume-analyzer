@@ -1,21 +1,65 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Sparkles, ArrowRight, Loader2 } from "lucide-react";
+import {
+  Sparkles,
+  ArrowRight,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import ResumeDropzone from "@/components/dashboard/ResumeDropzone";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { uploadResume } from "@/services/resumeService";
+import { getApiErrorMessage } from "@/services/api";
 
 export default function UploadResume() {
   const [file, setFile] = useState(null);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  function handleAnalyze() {
-    setAnalyzing(true);
-    // Purely presentational transition — no backend call is made.
-    setTimeout(() => navigate("/analysis"), 900);
+  async function handleAnalyze() {
+    if (!file) return;
+
+    setUploading(true);
+    setError("");
+    setSuccess("");
+    setProgress(10);
+
+    try {
+      const response = await uploadResume(file, (progressEvent) => {
+        const percent = Math.round(
+          (progressEvent.loaded * 100) /
+            (progressEvent.total || file.size || 1),
+        );
+        setProgress(percent);
+      });
+      setProgress(100);
+      setSuccess("Resume uploaded and analyzed successfully.");
+      const resumeId = response.data?.resume?.id;
+      if (resumeId) {
+        setTimeout(() => navigate(`/analysis/${resumeId}`), 600);
+      }
+    } catch (err) {
+      setProgress(0);
+      setError(
+        getApiErrorMessage(err, "We could not upload your resume right now."),
+      );
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -26,9 +70,12 @@ export default function UploadResume() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="font-display text-2xl font-bold">Upload your resume</h2>
+          <h2 className="font-display text-2xl font-bold">
+            Upload your resume
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            We'll scan the structure, keywords, and formatting the way an ATS would.
+            We'll scan the structure, keywords, and formatting the way an ATS
+            would.
           </p>
         </motion.div>
 
@@ -36,19 +83,44 @@ export default function UploadResume() {
           <CardContent className="p-6 sm:p-8">
             <ResumeDropzone onFileSelected={setFile} />
 
+            {uploading && (
+              <div className="mt-5 space-y-2">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Uploading and analyzing…</span>
+                  <span>{progress}%</span>
+                </div>
+                <Progress value={progress} />
+              </div>
+            )}
+
+            {error && (
+              <div className="mt-5 flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mt-5 flex items-center gap-2 rounded-xl border border-success/20 bg-success/10 px-4 py-3 text-sm text-success">
+                <CheckCircle2 className="h-4 w-4" />
+                {success}
+              </div>
+            )}
+
             <div className="mt-6 flex flex-col-reverse items-center justify-between gap-4 sm:flex-row">
               <p className="text-xs text-muted-foreground">
-                Your file is analyzed locally in this session and never shared.
+                Only PDF files are supported for analysis.
               </p>
               <Button
                 size="lg"
-                disabled={!file || analyzing}
+                disabled={!file || uploading}
                 onClick={handleAnalyze}
                 className="w-full sm:w-auto"
+                aria-label="Upload and analyze the selected resume"
               >
-                {analyzing ? (
+                {uploading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Analyzing...
+                    <Loader2 className="h-4 w-4 animate-spin" /> Uploading...
                   </>
                 ) : (
                   <>

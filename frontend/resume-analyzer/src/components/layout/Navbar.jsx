@@ -82,6 +82,7 @@ export default function Navbar({ onMenuClick, title = "Dashboard" }) {
                 <button
                   className="block w-full px-4 py-3 text-left hover:bg-muted"
                   onClick={logout}
+                  aria-label="Log out of your account"
                 >
                   Logout
                 </button>
