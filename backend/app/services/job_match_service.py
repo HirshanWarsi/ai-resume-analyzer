@@ -1,5 +1,4 @@
 import json
-from re import match
 
 from sqlalchemy.orm import Session
 
@@ -10,11 +9,15 @@ from app.services.ai_service import model
 def analyze_job_match(
     db: Session,
     resume_id: int,
+    user_id: int,
     job_description: str
 ):
     resume = (
         db.query(Resume)
-        .filter(Resume.id == resume_id)
+        .filter(
+            Resume.id == resume_id,
+            Resume.user_id == user_id
+        )
         .first()
     )
 

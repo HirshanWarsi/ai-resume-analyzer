@@ -31,6 +31,7 @@ def match_job(
     result = analyze_job_match(
         db=db,
         resume_id=request.resume_id,
+        user_id=current_user.id,
         job_description=request.job_description
     )
 

@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Menu, Bell, Sun, Moon, ChevronDown } from "lucide-react";
-import { useTheme } from "@/lib/theme-context";
+import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Navbar({ onMenuClick, title = "Dashboard" }) {
   const [open, setOpen] = useState(false);

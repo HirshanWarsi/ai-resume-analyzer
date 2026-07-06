@@ -68,6 +68,23 @@ export default function ResumeAnalysis() {
     }
   }, [resumeId]);
 
+  const strengths = useMemo(
+    () => parseJsonList(analysis?.strengths, []),
+    [analysis?.strengths],
+  );
+  const weaknesses = useMemo(
+    () => parseJsonList(analysis?.weaknesses, []),
+    [analysis?.weaknesses],
+  );
+  const missingSkills = useMemo(
+    () => parseJsonList(analysis?.missing_skills, []),
+    [analysis?.missing_skills],
+  );
+  const suggestions = useMemo(
+    () => parseJsonList(analysis?.suggestions, []),
+    [analysis?.suggestions],
+  );
+
   async function handleExport() {
     if (!resumeId) return;
 
@@ -79,7 +96,10 @@ export default function ResumeAnalysis() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Resume_Report_${resumeId}.pdf`;
+      const baseName = (resumeMeta?.filename || `Resume_${resumeId}`)
+        .replace(/\.[^/.]+$/, "")
+        .replace(/[^a-z0-9_-]+/gi, "_");
+      link.download = `${baseName}_Report.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -121,23 +141,6 @@ export default function ResumeAnalysis() {
       </DashboardLayout>
     );
   }
-
-  const strengths = useMemo(
-    () => parseJsonList(analysis.strengths, []),
-    [analysis.strengths],
-  );
-  const weaknesses = useMemo(
-    () => parseJsonList(analysis.weaknesses, []),
-    [analysis.weaknesses],
-  );
-  const missingSkills = useMemo(
-    () => parseJsonList(analysis.missing_skills, []),
-    [analysis.missing_skills],
-  );
-  const suggestions = useMemo(
-    () => parseJsonList(analysis.suggestions, []),
-    [analysis.suggestions],
-  );
 
   const displayName = resumeMeta?.filename || "Your resume";
   const generatedDate = resumeMeta?.uploaded_at

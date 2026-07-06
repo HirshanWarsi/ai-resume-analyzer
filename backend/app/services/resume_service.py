@@ -1,9 +1,8 @@
 import os
-import shutil
 import uuid
 
-from fastapi import UploadFile
-from sqlalchemy.orm import Session, joinedload
+from fastapi import HTTPException, UploadFile
+from sqlalchemy.orm import Session
 
 from app.models.resume import Resume
 from app.services.parser_service import extract_text_from_pdf
@@ -11,6 +10,7 @@ from app.services.analysis_service import analyze_and_save_resume
 from app.models.resume_analysis import ResumeAnalysis
 
 UPLOAD_DIR = "uploads/resumes"
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024
 
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -20,7 +20,7 @@ def save_resume(
     user_id: int,
     file: UploadFile
 ):
-    file_extension = file.filename.split(".")[-1]
+    file_extension = file.filename.rsplit(".", 1)[-1].lower()
 
     unique_filename = f"{uuid.uuid4()}.{file_extension}"
 
@@ -29,8 +29,19 @@ def save_resume(
         unique_filename
     )
 
+    total_size = 0
+
     with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        while chunk := file.file.read(1024 * 1024):
+            total_size += len(chunk)
+            if total_size > MAX_UPLOAD_SIZE:
+                buffer.close()
+                os.remove(file_path)
+                raise HTTPException(
+                    status_code=413,
+                    detail="Resume PDF must be 10 MB or smaller."
+                )
+            buffer.write(chunk)
 
     text = extract_text_from_pdf(file_path)
 
@@ -64,6 +75,7 @@ def get_resume_history(
     resumes = (
         db.query(Resume)
         .filter(Resume.user_id == user_id)
+        .order_by(Resume.uploaded_at.desc())
         .all()
     )
 
@@ -84,7 +96,7 @@ def get_resume_history(
                 "resume_id": resume.id,
                 "filename": resume.original_filename,
                 "ats_score": analysis.ats_score if analysis else 0,
-                "uploaded_at": resume.created_at,
+                "uploaded_at": resume.uploaded_at,
             }
         )
 

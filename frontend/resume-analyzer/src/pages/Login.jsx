@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { loginUser } from "@/services/authService";
 import { getApiErrorMessage } from "@/services/api";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);

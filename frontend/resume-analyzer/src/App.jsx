@@ -1,14 +1,15 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { ThemeProvider } from "@/lib/theme-context";
-import { useAuth } from "@/context/AuthContext";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import Dashboard from "@/pages/Dashboard";
-import UploadResume from "@/pages/UploadResume";
-import ResumeAnalysis from "@/pages/ResumeAnalysis";
-import JobMatch from "@/pages/JobMatch";
+import { useAuth } from "@/hooks/useAuth";
+
+const Login = lazy(() => import("@/pages/Login"));
+const Register = lazy(() => import("@/pages/Register"));
+const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const UploadResume = lazy(() => import("@/pages/UploadResume"));
+const ResumeAnalysis = lazy(() => import("@/pages/ResumeAnalysis"));
+const JobMatch = lazy(() => import("@/pages/JobMatch"));
 
 function PageLoading() {
   return (
@@ -58,58 +59,60 @@ function RootRedirect() {
 export default function App() {
   return (
     <ThemeProvider>
-      <Routes>
-        <Route path="/" element={<RootRedirect />} />
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/upload"
-          element={
-            <ProtectedRoute>
-              <UploadResume />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/analysis/:resumeId?"
-          element={
-            <ProtectedRoute>
-              <ResumeAnalysis />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/job-match"
-          element={
-            <ProtectedRoute>
-              <JobMatch />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/login" replace />} />
-      </Routes>
+      <Suspense fallback={<PageLoading />}>
+        <Routes>
+          <Route path="/" element={<RootRedirect />} />
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/upload"
+            element={
+              <ProtectedRoute>
+                <UploadResume />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analysis/:resumeId?"
+            element={
+              <ProtectedRoute>
+                <ResumeAnalysis />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/job-match"
+            element={
+              <ProtectedRoute>
+                <JobMatch />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </Suspense>
     </ThemeProvider>
   );
 }

@@ -1,3 +1,7 @@
+import os
+import re
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -7,6 +11,7 @@ from app.auth.auth_handler import get_current_user
 from app.models.user import User
 from app.schemas.upload import UploadResponse
 from app.services.resume_service import save_resume
+from app.services.resume_service import MAX_UPLOAD_SIZE
 from app.services.analysis_service import get_analysis_by_resume_id
 from app.schemas.analysis import ResumeAnalysisResponse
 from app.schemas.history import ResumeHistoryResponse
@@ -32,11 +37,26 @@ def upload_resume(
     db: Session = Depends(get_db)
 ):
 
-    # Allow only PDF files
-    if not file.filename.lower().endswith(".pdf"):
+    filename = file.filename or ""
+    is_pdf = (
+        filename.lower().endswith(".pdf")
+        and file.content_type == "application/pdf"
+    )
+
+    if not is_pdf:
         raise HTTPException(
             status_code=400,
-            detail="Only PDF files are allowed."
+            detail="Please upload a PDF file. DOC, DOCX, TXT, ZIP, and other formats are not supported."
+        )
+
+    file.file.seek(0, os.SEEK_END)
+    file_size = file.file.tell()
+    file.file.seek(0)
+
+    if file_size > MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail="Resume PDF must be 10 MB or smaller."
         )
 
     result = save_resume(
@@ -56,6 +76,21 @@ def get_resume_analysis(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    resume = (
+        db.query(Resume)
+        .filter(
+            Resume.id == resume_id,
+            Resume.user_id == current_user.id
+        )
+        .first()
+    )
+
+    if resume is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Resume not found"
+        )
+
     analysis = get_analysis_by_resume_id(
         db,
         resume_id
@@ -124,11 +159,18 @@ def export_resume_report(
         analysis
     )
 
+    base_filename = re.sub(
+        r"[^A-Za-z0-9_.-]+",
+        "_",
+        (resume.original_filename or f"Resume_{resume.id}").rsplit(".", 1)[0]
+    ).strip("._") or f"Resume_{resume.id}"
+    report_filename = f"{base_filename}_Report.pdf"
+
     return StreamingResponse(
         pdf,
         media_type="application/pdf",
         headers={
             "Content-Disposition":
-            f'attachment; filename="Resume_Report_{resume.id}.pdf"'
+            f'attachment; filename="{report_filename}"; filename*=UTF-8\'\'{quote(report_filename)}'
         },
     )

@@ -81,7 +81,10 @@ export default function UploadResume() {
 
         <Card>
           <CardContent className="p-6 sm:p-8">
-            <ResumeDropzone onFileSelected={setFile} />
+            <ResumeDropzone
+              onFileSelected={setFile}
+              onValidationError={setError}
+            />
 
             {uploading && (
               <div className="mt-5 space-y-2">

@@ -4,7 +4,26 @@ import { UploadCloud, FileText, X, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export default function ResumeDropzone({ onFileSelected }) {
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
+
+function validateResumeFile(file) {
+  if (!file) return "";
+
+  const isPdf =
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+  if (!isPdf) {
+    return "Please upload a PDF file. DOC, DOCX, TXT, ZIP, and other formats are not supported.";
+  }
+
+  if (file.size > MAX_UPLOAD_SIZE) {
+    return "Please upload a PDF that is 10 MB or smaller.";
+  }
+
+  return "";
+}
+
+export default function ResumeDropzone({ onFileSelected, onValidationError }) {
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState(null);
   const inputRef = useRef(null);
@@ -13,10 +32,23 @@ export default function ResumeDropzone({ onFileSelected }) {
     (files) => {
       const f = files?.[0];
       if (!f) return;
+      const validationError = validateResumeFile(f);
+
+      if (validationError) {
+        setFile(null);
+        onFileSelected?.(null);
+        onValidationError?.(validationError);
+        if (inputRef.current) {
+          inputRef.current.value = "";
+        }
+        return;
+      }
+
       setFile(f);
+      onValidationError?.("");
       onFileSelected?.(f);
     },
-    [onFileSelected],
+    [onFileSelected, onValidationError],
   );
 
   const onDrop = (e) => {
@@ -61,7 +93,7 @@ export default function ResumeDropzone({ onFileSelected }) {
         <input
           ref={inputRef}
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept="application/pdf,.pdf"
           className="hidden"
           aria-label="Choose a resume file"
           onChange={(e) => handleFiles(e.target.files)}
@@ -112,7 +144,13 @@ export default function ResumeDropzone({ onFileSelected }) {
               <button
                 type="button"
                 aria-label="Remove selected resume file"
-                onClick={() => setFile(null)}
+                onClick={() => {
+                  setFile(null);
+                  onFileSelected?.(null);
+                  if (inputRef.current) {
+                    inputRef.current.value = "";
+                  }
+                }}
                 className="mt-4 flex items-center gap-1 text-xs font-medium text-destructive hover:underline"
               >
                 <X className="h-3.5 w-3.5" /> Remove file

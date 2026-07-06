@@ -1,18 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Target,
-  FileSearch,
-  Loader2,
-  FileText,
-  AlertCircle,
-} from "lucide-react";
+import { Target, FileSearch, FileText, AlertCircle } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import WelcomeCard from "@/components/dashboard/WelcomeCard";
 import StatsGrid from "@/components/dashboard/StatsGrid";
 import RecentAnalyses from "@/components/dashboard/RecentAnalyses";
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { getApiErrorMessage } from "@/services/api";
 import { getResumeHistory } from "@/services/resumeService";
 
@@ -55,7 +49,7 @@ export default function Dashboard() {
     return [
       {
         label: "Total resumes",
-        value: history.length,
+        value: sortedHistory.length,
         suffix: "",
         delta: "+0%",
       },
@@ -72,22 +66,22 @@ export default function Dashboard() {
       },
       {
         label: "Recent analyses",
-        value: history.length,
+        value: sortedHistory.length,
         suffix: "",
         delta: history.length ? "Updated" : "—",
       },
     ];
-  }, [history]);
+  }, [history.length, sortedHistory]);
 
   const recentAnalyses = useMemo(() => {
-    return history.slice(0, 5).map((item) => ({
+    return sortedHistory.slice(0, 5).map((item) => ({
       id: item.resume_id,
       fileName: item.filename,
       role: "Uploaded resume",
       date: new Date(item.uploaded_at).toLocaleDateString(),
       score: item.ats_score,
     }));
-  }, [history]);
+  }, [sortedHistory]);
 
   return (
     <DashboardLayout title="Dashboard">
@@ -139,7 +133,11 @@ export default function Dashboard() {
 
               <div className="flex flex-col gap-4">
                 <Link
-                  to="/analysis"
+                  to={
+                    sortedHistory[0]?.resume_id
+                      ? `/analysis/${sortedHistory[0].resume_id}`
+                      : "/upload"
+                  }
                   aria-label="Open the latest resume analysis"
                 >
                   <Card className="group h-full transition-all hover:-translate-y-0.5 hover:shadow-glow">
